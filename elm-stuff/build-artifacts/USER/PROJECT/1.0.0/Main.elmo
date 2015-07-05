@@ -1,0 +1,128 @@
+Elm.Main = Elm.Main || {};
+Elm.Main.make = function (_elm) {
+   "use strict";
+   _elm.Main = _elm.Main || {};
+   if (_elm.Main.values)
+   return _elm.Main.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Main",
+   $Basics = Elm.Basics.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $Http = Elm.Http.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm);
+   var start = function (app) {
+      return function () {
+         var actions = $Signal.mailbox($Maybe.Nothing);
+         var address = A2($Signal.forwardTo,
+         actions.address,
+         $Maybe.Just);
+         var model = A3($Signal.foldp,
+         F2(function (_v0,model) {
+            return function () {
+               switch (_v0.ctor)
+               {case "Just":
+                  return A2(app.update,
+                    _v0._0,
+                    model);}
+               _U.badCase($moduleName,
+               "on line 76, column 34 to 57");
+            }();
+         }),
+         app.model,
+         actions.signal);
+         return A2($Signal.map,
+         app.view(address),
+         model);
+      }();
+   };
+   var App = F3(function (a,b,c) {
+      return {_: {}
+             ,model: a
+             ,update: c
+             ,view: b};
+   });
+   var places = function () {
+      var place = A3($Json$Decode.object2,
+      F2(function (city,state) {
+         return A2($Basics._op["++"],
+         city,
+         A2($Basics._op["++"],
+         ", ",
+         state));
+      }),
+      A2($Json$Decode._op[":="],
+      "place name",
+      $Json$Decode.string),
+      A2($Json$Decode._op[":="],
+      "state",
+      $Json$Decode.string));
+      return A2($Json$Decode._op[":="],
+      "places",
+      $Json$Decode.list(place));
+   }();
+   var lookupZipCode = function (query) {
+      return A2($Http.get,
+      places,
+      A2($Basics._op["++"],
+      "http://api.zippopotam.us/us/",
+      query));
+   };
+   var update = F2(function (action,
+   model) {
+      return function () {
+         switch (action.ctor)
+         {case "Decrement":
+            return model - 1;
+            case "Increment":
+            return model + 1;}
+         _U.badCase($moduleName,
+         "between lines 31 and 33");
+      }();
+   });
+   var model = 0;
+   var Decrement = {ctor: "Decrement"};
+   var Increment = {ctor: "Increment"};
+   var view = F2(function (address,
+   model) {
+      return A2($Html.div,
+      _L.fromArray([]),
+      _L.fromArray([A2($Html.button,
+                   _L.fromArray([A2($Html$Events.onClick,
+                   address,
+                   Decrement)]),
+                   _L.fromArray([$Html.text("-")]))
+                   ,A2($Html.div,
+                   _L.fromArray([]),
+                   _L.fromArray([$Html.text($Basics.toString(model))]))
+                   ,A2($Html.button,
+                   _L.fromArray([A2($Html$Events.onClick,
+                   address,
+                   Increment)]),
+                   _L.fromArray([$Html.text("+")]))]));
+   });
+   var main = start({_: {}
+                    ,model: model
+                    ,update: update
+                    ,view: view});
+   _elm.Main.values = {_op: _op
+                      ,Increment: Increment
+                      ,Decrement: Decrement
+                      ,main: main
+                      ,model: model
+                      ,view: view
+                      ,update: update
+                      ,lookupZipCode: lookupZipCode
+                      ,places: places
+                      ,App: App
+                      ,start: start};
+   return _elm.Main.values;
+};
