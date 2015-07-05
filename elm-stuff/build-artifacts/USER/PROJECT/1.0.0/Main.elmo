@@ -19,12 +19,12 @@ Elm.Main.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
+   var actions = $Signal.mailbox($Maybe.Nothing);
+   var actionsAddress = A2($Signal.forwardTo,
+   actions.address,
+   $Maybe.Just);
    var start = function (app) {
       return function () {
-         var actions = $Signal.mailbox($Maybe.Nothing);
-         var address = A2($Signal.forwardTo,
-         actions.address,
-         $Maybe.Just);
          var model = A3($Signal.foldp,
          F2(function (_v0,model) {
             return function () {
@@ -34,13 +34,13 @@ Elm.Main.make = function (_elm) {
                     _v0._0,
                     model);}
                _U.badCase($moduleName,
-               "on line 76, column 34 to 57");
+               "on line 84, column 34 to 57");
             }();
          }),
          app.model,
          actions.signal);
          return A2($Signal.map,
-         app.view(address),
+         app.view(actionsAddress),
          model);
       }();
    };
@@ -85,7 +85,7 @@ Elm.Main.make = function (_elm) {
             case "Increment":
             return model + 1;}
          _U.badCase($moduleName,
-         "between lines 31 and 33");
+         "between lines 33 and 35");
       }();
    });
    var model = 0;
@@ -123,6 +123,8 @@ Elm.Main.make = function (_elm) {
                       ,lookupZipCode: lookupZipCode
                       ,places: places
                       ,App: App
+                      ,actions: actions
+                      ,actionsAddress: actionsAddress
                       ,start: start};
    return _elm.Main.values;
 };

@@ -6,6 +6,8 @@ import Json.Decode as Json exposing ((:=))
 import Http
 
 ----------------------------------------
+-- <Basic Counter>
+----------------------------------------
 
 type alias Model = Int
 
@@ -31,6 +33,11 @@ update action model =
   case action of
     Increment -> model + 1
     Decrement -> model - 1
+
+----------------------------------------
+-- </Basic Counter>
+----------------------------------------
+
 
 ----------------------------------------
 -- <Tasks>
