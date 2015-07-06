@@ -3823,28 +3823,30 @@ Elm.Main.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
+   var modelStep = F3(function (update,
+   _v0,
+   model) {
+      return function () {
+         switch (_v0.ctor)
+         {case "Just": return A2(update,
+              _v0._0,
+              model);}
+         _U.badCase($moduleName,
+         "on line 109, column 3 to 22");
+      }();
+   });
    var actions = $Signal.mailbox($Maybe.Nothing);
-   var actionsAddress = A2($Signal.forwardTo,
+   var actionAddress = A2($Signal.forwardTo,
    actions.address,
    $Maybe.Just);
    var start = function (app) {
       return function () {
          var model = A3($Signal.foldp,
-         F2(function (_v0,model) {
-            return function () {
-               switch (_v0.ctor)
-               {case "Just":
-                  return A2(app.update,
-                    _v0._0,
-                    model);}
-               _U.badCase($moduleName,
-               "on line 84, column 34 to 57");
-            }();
-         }),
+         modelStep(app.update),
          app.model,
          actions.signal);
          return A2($Signal.map,
-         app.view(actionsAddress),
+         app.view(actionAddress),
          model);
       }();
    };
@@ -3880,6 +3882,19 @@ Elm.Main.make = function (_elm) {
       "http://api.zippopotam.us/us/",
       query));
    };
+   var results = $Signal.mailbox(_L.fromArray([]));
+   var zipCode = $Signal.mailbox("");
+   var fetch = Elm.Native.Task.make(_elm).performSignal("fetch",
+   function () {
+      var $return = function (zip) {
+         return A2($Task.andThen,
+         lookupZipCode(zip),
+         $Signal.send(results.address));
+      };
+      return A2($Signal.map,
+      $return,
+      zipCode.signal);
+   }());
    var update = F2(function (action,
    model) {
       return function () {
@@ -3889,7 +3904,7 @@ Elm.Main.make = function (_elm) {
             case "Increment":
             return model + 1;}
          _U.badCase($moduleName,
-         "between lines 33 and 35");
+         "between lines 37 and 39");
       }();
    });
    var model = 0;
@@ -3911,7 +3926,12 @@ Elm.Main.make = function (_elm) {
                    _L.fromArray([A2($Html$Events.onClick,
                    address,
                    Increment)]),
-                   _L.fromArray([$Html.text("+")]))]));
+                   _L.fromArray([$Html.text("+")]))
+                   ,A2($Html.button,
+                   _L.fromArray([A2($Html$Events.onClick,
+                   zipCode.address,
+                   $Basics.toString(model))]),
+                   _L.fromArray([$Html.text("x")]))]));
    });
    var main = start({_: {}
                     ,model: model
@@ -3924,11 +3944,14 @@ Elm.Main.make = function (_elm) {
                       ,model: model
                       ,view: view
                       ,update: update
+                      ,zipCode: zipCode
+                      ,results: results
                       ,lookupZipCode: lookupZipCode
                       ,places: places
                       ,App: App
                       ,actions: actions
-                      ,actionsAddress: actionsAddress
+                      ,actionAddress: actionAddress
+                      ,modelStep: modelStep
                       ,start: start};
    return _elm.Main.values;
 };
@@ -4004,6 +4027,63 @@ Elm.Maybe.make = function (_elm) {
                        ,Just: Just
                        ,Nothing: Nothing};
    return _elm.Maybe.values;
+};
+Elm.Maybe = Elm.Maybe || {};
+Elm.Maybe.Extra = Elm.Maybe.Extra || {};
+Elm.Maybe.Extra.make = function (_elm) {
+   "use strict";
+   _elm.Maybe = _elm.Maybe || {};
+   _elm.Maybe.Extra = _elm.Maybe.Extra || {};
+   if (_elm.Maybe.Extra.values)
+   return _elm.Maybe.Extra.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Maybe.Extra",
+   $Basics = Elm.Basics.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var isJust = function (m) {
+      return function () {
+         switch (m.ctor)
+         {case "Just": return true;
+            case "Nothing": return false;}
+         _U.badCase($moduleName,
+         "between lines 48 and 50");
+      }();
+   };
+   var isNothing = function (m) {
+      return function () {
+         switch (m.ctor)
+         {case "Just": return false;
+            case "Nothing": return true;}
+         _U.badCase($moduleName,
+         "between lines 36 and 38");
+      }();
+   };
+   var join = function (mx) {
+      return function () {
+         switch (mx.ctor)
+         {case "Just": return mx._0;
+            case "Nothing":
+            return $Maybe.Nothing;}
+         _U.badCase($moduleName,
+         "between lines 24 and 26");
+      }();
+   };
+   _op["?"] = F2(function (mx,x) {
+      return A2($Maybe.withDefault,
+      x,
+      mx);
+   });
+   _elm.Maybe.Extra.values = {_op: _op
+                             ,join: join
+                             ,isNothing: isNothing
+                             ,isJust: isJust};
+   return _elm.Maybe.Extra.values;
 };
 Elm.Native.Array = {};
 Elm.Native.Array.make = function(localRuntime) {

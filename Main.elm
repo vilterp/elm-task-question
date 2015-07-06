@@ -55,7 +55,8 @@ results =
 
 port fetch : Signal (Task Http.Error ())
 port fetch =
-  let return x = lookupZipCode x `andThen` (Signal.send results.address)
+  let return zip = lookupZipCode zip `andThen`
+                   (Signal.send results.address)
   in
     Signal.map return zipCode.signal
 
@@ -87,28 +88,37 @@ places =
 ----------------------------------------
 -- <StartApp>
 ----------------------------------------
+type alias UpdateFn = (Action -> Model -> Model)
+
 type alias App model action =
-    { model : model
-    , view : Address action -> model -> Html
-    , update : action -> model -> model
+    { model : Model
+    , view : Address Action -> Model -> Html
+    , update : UpdateFn
     }
 
-start : App model action -> Signal Html
+actions : Mailbox (Maybe Action)
+actions =
+  Signal.mailbox Nothing
+
+actionAddress : Address Action
+actionAddress =
+  Signal.forwardTo actions.address Just
+
+modelStep : UpdateFn -> (Maybe Action) -> Model -> Model
+modelStep update (Just action) model =
+  update action model
+
+start : App Model Action -> Signal Html
 start app =
   let
-    actions =
-      Signal.mailbox Nothing
-
-    address =
-      Signal.forwardTo actions.address Just
-
+    model : Signal Model
     model =
       Signal.foldp
-        (\(Just action) model -> app.update action model)
+        (modelStep app.update)
         app.model
         actions.signal
   in
-    Signal.map (app.view address) model
+    Signal.map (app.view actionAddress) model
 
 ----------------------------------------
 -- </StartApp>

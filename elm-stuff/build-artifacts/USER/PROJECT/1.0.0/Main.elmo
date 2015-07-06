@@ -19,28 +19,30 @@ Elm.Main.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
+   var modelStep = F3(function (update,
+   _v0,
+   model) {
+      return function () {
+         switch (_v0.ctor)
+         {case "Just": return A2(update,
+              _v0._0,
+              model);}
+         _U.badCase($moduleName,
+         "on line 109, column 3 to 22");
+      }();
+   });
+   var actions = $Signal.mailbox($Maybe.Nothing);
+   var actionAddress = A2($Signal.forwardTo,
+   actions.address,
+   $Maybe.Just);
    var start = function (app) {
       return function () {
-         var actions = $Signal.mailbox($Maybe.Nothing);
-         var address = A2($Signal.forwardTo,
-         actions.address,
-         $Maybe.Just);
          var model = A3($Signal.foldp,
-         F2(function (_v0,model) {
-            return function () {
-               switch (_v0.ctor)
-               {case "Just":
-                  return A2(app.update,
-                    _v0._0,
-                    model);}
-               _U.badCase($moduleName,
-               "on line 108, column 34 to 57");
-            }();
-         }),
+         modelStep(app.update),
          app.model,
          actions.signal);
          return A2($Signal.map,
-         app.view(address),
+         app.view(actionAddress),
          model);
       }();
    };
@@ -80,9 +82,9 @@ Elm.Main.make = function (_elm) {
    var zipCode = $Signal.mailbox("");
    var fetch = Elm.Native.Task.make(_elm).performSignal("fetch",
    function () {
-      var $return = function (x) {
+      var $return = function (zip) {
          return A2($Task.andThen,
-         lookupZipCode(x),
+         lookupZipCode(zip),
          $Signal.send(results.address));
       };
       return A2($Signal.map,
@@ -143,6 +145,9 @@ Elm.Main.make = function (_elm) {
                       ,lookupZipCode: lookupZipCode
                       ,places: places
                       ,App: App
+                      ,actions: actions
+                      ,actionAddress: actionAddress
+                      ,modelStep: modelStep
                       ,start: start};
    return _elm.Main.values;
 };
