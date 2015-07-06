@@ -1,9 +1,10 @@
 import Html exposing (Html, div, button, text)
 import Html.Events exposing (onClick)
-import Signal exposing (Address)
-import Task exposing (Task)
+import Signal exposing (Address, Mailbox, Signal, mailbox)
+import Task exposing (Task, andThen)
 import Json.Decode as Json exposing ((:=))
 import Http
+import Maybe.Extra exposing (isJust)
 
 ----------------------------------------
 -- <Basic Counter>
@@ -26,6 +27,9 @@ view address model =
     [ button [ onClick address Decrement ] [ text "-" ]
     , div [] [ text (toString model) ]
     , button [ onClick address Increment ] [ text "+" ]
+
+    , button [ onClick zipCode.address (toString model)]
+             [ text "x" ]
     ]
 
 update : Action -> Model -> Model
@@ -38,6 +42,26 @@ update action model =
 -- </Basic Counter>
 ----------------------------------------
 
+----------------------------------------
+-- <Mailboxes n' Ports>
+----------------------------------------
+zipCode : Signal.Mailbox String
+zipCode =
+  mailbox ""
+
+results : Signal.Mailbox (List String)
+results =
+  mailbox []
+
+port fetch : Signal (Task Http.Error ())
+port fetch =
+  let return x = lookupZipCode x `andThen` (Signal.send results.address)
+  in
+    Signal.map return zipCode.signal
+
+----------------------------------------
+-- </Mailboxes n' Ports>
+----------------------------------------
 
 ----------------------------------------
 -- <Tasks>

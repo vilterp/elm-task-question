@@ -1,0 +1,57 @@
+Elm.Maybe = Elm.Maybe || {};
+Elm.Maybe.Extra = Elm.Maybe.Extra || {};
+Elm.Maybe.Extra.make = function (_elm) {
+   "use strict";
+   _elm.Maybe = _elm.Maybe || {};
+   _elm.Maybe.Extra = _elm.Maybe.Extra || {};
+   if (_elm.Maybe.Extra.values)
+   return _elm.Maybe.Extra.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Maybe.Extra",
+   $Basics = Elm.Basics.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var isJust = function (m) {
+      return function () {
+         switch (m.ctor)
+         {case "Just": return true;
+            case "Nothing": return false;}
+         _U.badCase($moduleName,
+         "between lines 48 and 50");
+      }();
+   };
+   var isNothing = function (m) {
+      return function () {
+         switch (m.ctor)
+         {case "Just": return false;
+            case "Nothing": return true;}
+         _U.badCase($moduleName,
+         "between lines 36 and 38");
+      }();
+   };
+   var join = function (mx) {
+      return function () {
+         switch (mx.ctor)
+         {case "Just": return mx._0;
+            case "Nothing":
+            return $Maybe.Nothing;}
+         _U.badCase($moduleName,
+         "between lines 24 and 26");
+      }();
+   };
+   _op["?"] = F2(function (mx,x) {
+      return A2($Maybe.withDefault,
+      x,
+      mx);
+   });
+   _elm.Maybe.Extra.values = {_op: _op
+                             ,join: join
+                             ,isNothing: isNothing
+                             ,isJust: isJust};
+   return _elm.Maybe.Extra.values;
+};
