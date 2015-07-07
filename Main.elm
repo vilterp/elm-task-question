@@ -1,7 +1,7 @@
 import Html exposing (Html, div, button, text)
 import Html.Events exposing (onClick)
 import Signal exposing (Address, Mailbox, Signal, mailbox)
-import Task exposing (Task, andThen)
+import Task exposing (Task, andThen, fail, succeed, mapError)
 import Json.Decode as Json exposing ((:=))
 import Http
 import Maybe.Extra exposing (isJust)
@@ -53,12 +53,17 @@ results : Signal.Mailbox (List String)
 results =
   mailbox []
 
-port fetch : Signal (Task Http.Error ())
+type FetchError = EmptyZip
+                | HttpError Http.Error
+
+port fetch : Signal (Task FetchError ())
 port fetch =
-  let return zip = lookupZipCode zip `andThen`
-                   (Signal.send results.address)
+  let go zip = if zip == ""
+               then (fail EmptyZip)
+               else (mapError HttpError (lookupZipCode zip)) `andThen`
+                    (Signal.send results.address)
   in
-    Signal.map return zipCode.signal
+    Signal.map go zipCode.signal
 
 ----------------------------------------
 -- </Mailboxes n' Ports>
