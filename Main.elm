@@ -4,7 +4,6 @@ import Signal exposing (Address, Mailbox, Signal, mailbox)
 import Task exposing (Task, andThen, fail, succeed, mapError)
 import Json.Decode as Json exposing ((:=))
 import Http
-import Maybe.Extra exposing (isJust)
 
 ----------------------------------------
 -- <Basic Counter>
@@ -32,11 +31,11 @@ view address model =
              [ text "x" ]
     ]
 
-update : Action -> Model -> Model
+update : UpdateFn
 update action model =
   case action of
-    Increment -> model + 1
-    Decrement -> model - 1
+    Increment -> (model + 1, [1])
+    Decrement -> (model - 1, [0])
 
 ----------------------------------------
 -- </Basic Counter>
@@ -55,6 +54,7 @@ results =
 
 type FetchError = EmptyZip
                 | HttpError Http.Error
+                | NoOp
 
 port fetch : Signal (Task FetchError ())
 port fetch =
@@ -64,6 +64,21 @@ port fetch =
                     (Signal.send results.address)
   in
     Signal.map go zipCode.signal
+
+type alias BackgroundThingies = Int
+
+backgroundMailbox : Mailbox BackgroundThingies
+backgroundMailbox = Signal.mailbox -1
+
+port doBackground : Signal (Task FetchError ())
+port doBackground =
+    Signal.map
+      (\i ->
+        if i == 0
+          then (lookupZipCode (toString i) |> mapError HttpError) `andThen`
+               (Signal.send results.address)
+          else fail NoOp
+      ) backgroundMailbox.signal
 
 ----------------------------------------
 -- </Mailboxes n' Ports>
@@ -93,7 +108,8 @@ places =
 ----------------------------------------
 -- <StartApp>
 ----------------------------------------
-type alias UpdateFn = (Action -> Model -> Model)
+
+type alias UpdateFn = (Action -> Model -> (Model, List BackgroundThingies))
 
 type alias App model action =
     { model : Model
@@ -111,7 +127,13 @@ actionAddress =
 
 modelStep : UpdateFn -> (Maybe Action) -> Model -> Model
 modelStep update (Just action) model =
-  update action model
+  update action model |> fst
+
+backgroundActions : UpdateFn -> (Maybe Action) -> Model -> List (Task a ())
+backgroundActions update (Just action) model =
+  update action model |>
+    snd |>
+    List.map (\x -> Signal.send backgroundMailbox.address x)
 
 start : App Model Action -> Signal Html
 start app =
