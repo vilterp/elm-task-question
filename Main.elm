@@ -1,95 +1,54 @@
-import Html exposing (Html, div, button, text)
+import StartApp
+import Html exposing (div, button, text)
 import Html.Events exposing (onClick)
-import Signal exposing (Address, Mailbox, Signal, mailbox)
-import Task exposing (Task, andThen, fail, succeed, mapError)
+import Task as T
 import Json.Decode as Json exposing ((:=))
 import Http
+import Debug
 
-----------------------------------------
--- <Basic Counter>
-----------------------------------------
-
-type alias Model = Int
-
-type Action = Increment | Decrement
-
-main : Signal Html
 main =
-  start { model = model, view = view, update = update }
+  fst viewAndTasks
 
-model : Model
-model = 0
+port tasks : Signal (T.Task String ())
+port tasks =
+  snd viewAndTasks
 
-view : Address Action -> Model -> Html
+externalActions =
+  Signal.constant NoOp
+
+viewAndTasks =
+  StartApp.start
+    { initialState = initialState, view = view, update = update }
+    externalActions
+
+initialState = 0
+
 view address model =
   div []
-    [ button [ onClick address Decrement ] [ text "-" ]
+    [ button [ onClick address Decrement ] [ text "--" ]
     , div [] [ text (toString model) ]
-    , button [ onClick address Increment ] [ text "+" ]
-
-    , button [ onClick zipCode.address (toString model)]
-             [ text "x" ]
+    , button [ onClick address Increment ] [ text "++" ]
     ]
 
-update : UpdateFn
-update action model =
+type Action = Increment | Decrement | NoOp
+
+update loopback now action model =
   case action of
-    Increment -> (model + 1, [1])
-    Decrement -> (model - 1, [0])
+    Increment ->
+      (model + 1, Just (lookupZipCode (toString model)))
+    Decrement ->
+      (model - 1, Nothing)
 
-----------------------------------------
--- </Basic Counter>
-----------------------------------------
 
-----------------------------------------
--- <Mailboxes n' Ports>
-----------------------------------------
-zipCode : Signal.Mailbox String
-zipCode =
-  mailbox ""
-
-results : Signal.Mailbox (List String)
-results =
-  mailbox []
-
-type FetchError = EmptyZip
-                | HttpError Http.Error
-                | NoOp
-
-port fetch : Signal (Task FetchError ())
-port fetch =
-  let go zip = if zip == ""
-               then (fail EmptyZip)
-               else (mapError HttpError (lookupZipCode zip)) `andThen`
-                    (Signal.send results.address)
-  in
-    Signal.map go zipCode.signal
-
-type alias BackgroundThingies = Int
-
-backgroundMailbox : Mailbox BackgroundThingies
-backgroundMailbox = Signal.mailbox -1
-
-port doBackground : Signal (Task FetchError ())
-port doBackground =
-    Signal.map
-      (\i ->
-        if i == 0
-          then (lookupZipCode (toString i) |> mapError HttpError) `andThen`
-               (Signal.send results.address)
-          else fail NoOp
-      ) backgroundMailbox.signal
-
-----------------------------------------
--- </Mailboxes n' Ports>
-----------------------------------------
-
-----------------------------------------
--- <Tasks>
-----------------------------------------
-lookupZipCode : String -> Task Http.Error (List String)
+lookupZipCode : String -> T.Task String ()
 lookupZipCode query =
-  Http.get places ("http://api.zippopotam.us/us/" ++ query)
+    let
+        url = ("http://api.zippopotam.us/us/" ++ query)
+        fixupErrorType = T.mapError (always "ERRR!")
+        fetch = fixupErrorType (Http.get places url)
+    in
+        fetch `T.andThen` always (T.succeed ())
+
 
 places : Json.Decoder (List String)
 places =
@@ -100,53 +59,3 @@ places =
   in
     "places" := Json.list place
 
-----------------------------------------
--- </Tasks>
-----------------------------------------
-
-
-----------------------------------------
--- <StartApp>
-----------------------------------------
-
-type alias UpdateFn = (Action -> Model -> (Model, List BackgroundThingies))
-
-type alias App model action =
-    { model : Model
-    , view : Address Action -> Model -> Html
-    , update : UpdateFn
-    }
-
-actions : Mailbox (Maybe Action)
-actions =
-  Signal.mailbox Nothing
-
-actionAddress : Address Action
-actionAddress =
-  Signal.forwardTo actions.address Just
-
-modelStep : UpdateFn -> (Maybe Action) -> Model -> Model
-modelStep update (Just action) model =
-  update action model |> fst
-
-backgroundActions : UpdateFn -> (Maybe Action) -> Model -> List (Task a ())
-backgroundActions update (Just action) model =
-  update action model |>
-    snd |>
-    List.map (\x -> Signal.send backgroundMailbox.address x)
-
-start : App Model Action -> Signal Html
-start app =
-  let
-    model : Signal Model
-    model =
-      Signal.foldp
-        (modelStep app.update)
-        app.model
-        actions.signal
-  in
-    Signal.map (app.view actionAddress) model
-
-----------------------------------------
--- </StartApp>
-----------------------------------------
