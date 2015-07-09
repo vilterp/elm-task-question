@@ -21,7 +21,7 @@ viewAndTasks =
     { initialState = initialState, view = view, update = update }
     externalActions
 
-initialState = 0
+initialState = 19301
 
 view address model =
   div []
@@ -30,24 +30,35 @@ view address model =
     , button [ onClick address Increment ] [ text "++" ]
     ]
 
-type Action = Increment | Decrement | NoOp
+type Action = Increment | Decrement | Places (List String) | NoOp
 
 update loopback now action model =
   case action of
     Increment ->
-      (model + 1, Just (lookupZipCode (toString model)))
+      let
+        task =
+          lookupZipCode (toString model)
+            |> T.map (\strings -> Places strings)
+            |> loopback
+      in
+        (model + 1, [task])
     Decrement ->
-      (model - 1, Nothing)
+      (model - 1, [])
+    Places strings ->
+      let
+        log = Debug.log "result" strings
+      in
+        (model, [])
 
 
-lookupZipCode : String -> T.Task String ()
+lookupZipCode : String -> T.Task String (List String)
 lookupZipCode query =
     let
         url = ("http://api.zippopotam.us/us/" ++ query)
         fixupErrorType = T.mapError (always "ERRR!")
         fetch = fixupErrorType (Http.get places url)
     in
-        fetch `T.andThen` always (T.succeed ())
+        fetch
 
 
 places : Json.Decoder (List String)
